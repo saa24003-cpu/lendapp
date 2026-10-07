@@ -4,12 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>備品貸出管理アプリ (lendapp)</title>
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800">
 
-  <!-- 未ログイン画面 (ログインしないと使えない制御) -->
   <div id="login-view" class="flex flex-col items-center justify-center min-h-screen p-4">
     <div class="bg-white p-8 rounded-xl shadow-md text-center max-w-sm w-full">
       <h1 class="text-2xl font-bold mb-6 text-slate-700">📦 備品貸出管理</h1>
@@ -20,9 +18,7 @@
     </div>
   </div>
 
-  <!-- ログイン後画面 -->
   <div id="app-view" class="hidden max-w-4xl mx-auto p-4 md:p-8">
-    <!-- ヘッダー -->
     <header class="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm">
       <h1 class="text-xl font-bold text-slate-800">📦 備品貸出管理</h1>
       <div class="flex items-center gap-4">
@@ -32,29 +28,28 @@
     </header>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <!-- 登録フォーム (必須5項目) -->
       <section class="bg-white p-6 rounded-xl shadow-sm h-fit">
         <h2 class="text-lg font-bold mb-4 text-slate-700">貸出の記録</h2>
         <form id="item-form" class="space-y-4">
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">備品名</label>
-            <input type="text" id="itemName" required class="w-full border rounded-md p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="例: プロジェクター">
+            <input type="text" id="itemName" required class="w-full border rounded-md p-2 text-sm outline-none" placeholder="例: プロジェクター">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">借りた人の名前</label>
-            <input type="text" id="borrower" required class="w-full border rounded-md p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="例: 山田 太郎">
+            <input type="text" id="borrower" required class="w-full border rounded-md p-2 text-sm outline-none" placeholder="例: 山田 太郎">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">貸出日</label>
-            <input type="date" id="startDate" required class="w-full border rounded-md p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+            <input type="date" id="startDate" required class="w-full border rounded-md p-2 text-sm outline-none">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">返却予定日</label>
-            <input type="date" id="dueDate" required class="w-full border rounded-md p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+            <input type="date" id="dueDate" required class="w-full border rounded-md p-2 text-sm outline-none">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">返却状況</label>
-            <select id="status" class="w-full border rounded-md p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+            <select id="status" class="w-full border rounded-md p-2 text-sm outline-none bg-white">
               <option value="未返却">未返却</option>
               <option value="返却済み">返却済み</option>
             </select>
@@ -65,7 +60,6 @@
         </form>
       </section>
 
-      <!-- 登録データ一覧表示 (Firestoreから読み込み) -->
       <section class="md:col-span-2 bg-white p-6 rounded-xl shadow-sm">
         <h2 class="text-lg font-bold mb-4 text-slate-700">貸出一覧</h2>
         <div class="overflow-x-auto">
@@ -79,37 +73,18 @@
                 <th class="p-2">状況</th>
               </tr>
             </thead>
-            <tbody id="item-list">
-              <!-- JSで動的に追加されます -->
-            </tbody>
+            <tbody id="item-list"></tbody>
           </table>
         </div>
       </section>
     </div>
   </div>
 
-  <!-- Firebase v10 JavaScript SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-      getAuth, 
-      GoogleAuthProvider, 
-      signInWithPopup, 
-      signOut, 
-      onAuthStateChanged 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { 
-      getFirestore, 
-      collection, 
-      addDoc, 
-      onSnapshot, 
-      updateDoc, 
-      doc, 
-      query, 
-      orderBy 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, onSnapshot, updateDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ご提示いただいたFirebase設定情報
     const firebaseConfig = {
       apiKey: "AIzaSyDPWEnIn-PJf_QNj0Z5u2PTaTXqFSTvStY",
       authDomain: "lendapp-44031.firebaseapp.com",
@@ -119,13 +94,11 @@
       appId: "1:640346672151:web:265b419849310d62b5e052"
     };
 
-    // Firebase 初期化
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
 
-    // DOM要素
     const loginView = document.getElementById('login-view');
     const appView = document.getElementById('app-view');
     const loginBtn = document.getElementById('login-btn');
@@ -134,33 +107,23 @@
     const itemForm = document.getElementById('item-form');
     const itemList = document.getElementById('item-list');
 
-    // 1. Google ログイン
-    loginBtn.addEventListener('click', () => {
-      signInWithPopup(auth, provider).catch(err => {
-        alert("ログインエラー: " + err.message);
-      });
-    });
-
-    // ログアウト
+    loginBtn.addEventListener('click', () => signInWithPopup(auth, provider).catch(err => alert("ログインエラー: " + err.message)));
     logoutBtn.addEventListener('click', () => signOut(auth));
 
-    // 2. 認証状態の制御（未ログイン時はログイン画面を表示）
     onAuthStateChanged(auth, (user) => {
       if (user) {
         loginView.classList.add('hidden');
         appView.classList.remove('hidden');
         userNameSpan.textContent = user.displayName || user.email;
-        loadItems(); // データの読み込み開始
+        loadItems();
       } else {
         loginView.classList.remove('hidden');
         appView.classList.add('hidden');
       }
     });
 
-    // 3. データ登録処理 (Firestoreへの保存)
     itemForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      
       const newItem = {
         itemName: document.getElementById('itemName').value,
         borrower: document.getElementById('borrower').value,
@@ -169,7 +132,6 @@
         status: document.getElementById('status').value,
         createdAt: new Date()
       };
-
       try {
         await addDoc(collection(db, "lendings"), newItem);
         itemForm.reset();
@@ -179,23 +141,17 @@
       }
     });
 
-    // 4. データ一覧のリアルタイム読み込み (ページ再読み込み後も保持)
     function loadItems() {
       const q = query(collection(db, "lendings"), orderBy("createdAt", "desc"));
-      
       onSnapshot(q, (snapshot) => {
         itemList.innerHTML = "";
         snapshot.forEach((docSnapshot) => {
           const item = docSnapshot.data();
           const id = docSnapshot.id;
-
           const tr = document.createElement('tr');
           tr.className = "border-b text-slate-700 hover:bg-slate-50";
-          
           const isReturned = item.status === "返却済み";
-          const statusBadgeClass = isReturned 
-            ? "bg-emerald-100 text-emerald-700" 
-            : "bg-amber-100 text-amber-700";
+          const statusBadgeClass = isReturned ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700";
 
           tr.innerHTML = `
             <td class="p-2 font-medium">${escapeHtml(item.itemName)}</td>
@@ -213,20 +169,15 @@
       });
     }
 
-    // 返却状況の切り替え（クリックでステータス変更可能）
     window.toggleStatus = async (id, currentStatus) => {
       const newStatus = currentStatus === "未返却" ? "返却済み" : "未返却";
       await updateDoc(doc(db, "lendings", id), { status: newStatus });
     };
 
-    // 安全対策（HTMLエスケープ）
     function escapeHtml(str) {
-      return str.replace(/[&<>"']/g, (m) => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
-      })[m]);
+      return str.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]);
     }
 
-    // デフォルト日付の設定
     document.getElementById('startDate').valueAsDate = new Date();
   </script>
 </body>
