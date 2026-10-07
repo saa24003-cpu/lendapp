@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>備品貸出管理アプリ (lendapp)</title>
-  <!-- Tailwind CSS (UIデザイン用) -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800">
 
-  <!-- 未ログイン画面 -->
+  <!-- 未ログイン画面 (ログインしないと使えない制御) -->
   <div id="login-view" class="flex flex-col items-center justify-center min-h-screen p-4">
     <div class="bg-white p-8 rounded-xl shadow-md text-center max-w-sm w-full">
-      <h1 class="text-2xl font-bold mb-6 text-slate-700">備品貸出管理</h1>
+      <h1 class="text-2xl font-bold mb-6 text-slate-700">📦 備品貸出管理</h1>
       <p class="text-sm text-slate-500 mb-6">利用するにはGoogleアカウントでログインしてください。</p>
-      <button id="login-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition">
+      <button id="login-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition shadow">
         Googleでログイン
       </button>
     </div>
@@ -32,7 +32,7 @@
     </header>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <!-- 登録フォーム -->
+      <!-- 登録フォーム (必須5項目) -->
       <section class="bg-white p-6 rounded-xl shadow-sm h-fit">
         <h2 class="text-lg font-bold mb-4 text-slate-700">貸出の記録</h2>
         <form id="item-form" class="space-y-4">
@@ -65,7 +65,7 @@
         </form>
       </section>
 
-      <!-- 一覧表示 -->
+      <!-- 登録データ一覧表示 (Firestoreから読み込み) -->
       <section class="md:col-span-2 bg-white p-6 rounded-xl shadow-sm">
         <h2 class="text-lg font-bold mb-4 text-slate-700">貸出一覧</h2>
         <div class="overflow-x-auto">
@@ -80,7 +80,7 @@
               </tr>
             </thead>
             <tbody id="item-list">
-              <!-- Firestoreから読み込んだデータを動的生成 -->
+              <!-- JSで動的に追加されます -->
             </tbody>
           </table>
         </div>
@@ -88,7 +88,7 @@
     </div>
   </div>
 
-  <!-- Firebase モジュール読み込み -->
+  <!-- Firebase v10 JavaScript SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
@@ -109,14 +109,14 @@
       orderBy 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ⚠️ ここをご自身のFirebaseプロジェクト設定に置き換えてください
+    // ご提示いただいたFirebase設定情報
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyDPWEnIn-PJf_QNj0Z5u2PTaTXqFSTvStY",
+      authDomain: "lendapp-44031.firebaseapp.com",
+      projectId: "lendapp-44031",
+      storageBucket: "lendapp-44031.firebasestorage.app",
+      messagingSenderId: "640346672151",
+      appId: "1:640346672151:web:265b419849310d62b5e052"
     };
 
     // Firebase 初期化
@@ -125,7 +125,7 @@
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
 
-    // DOM要素の取得
+    // DOM要素
     const loginView = document.getElementById('login-view');
     const appView = document.getElementById('app-view');
     const loginBtn = document.getElementById('login-btn');
@@ -134,28 +134,30 @@
     const itemForm = document.getElementById('item-form');
     const itemList = document.getElementById('item-list');
 
-    // 1. Google ログイン処理
+    // 1. Google ログイン
     loginBtn.addEventListener('click', () => {
-      signInWithPopup(auth, provider).catch(err => alert("ログインエラー: " + err.message));
+      signInWithPopup(auth, provider).catch(err => {
+        alert("ログインエラー: " + err.message);
+      });
     });
 
-    // ログアウト処理
+    // ログアウト
     logoutBtn.addEventListener('click', () => signOut(auth));
 
-    // 2. 認証状態の監視（未ログイン時は操作不可に制御）
+    // 2. 認証状態の制御（未ログイン時はログイン画面を表示）
     onAuthStateChanged(auth, (user) => {
       if (user) {
         loginView.classList.add('hidden');
         appView.classList.remove('hidden');
         userNameSpan.textContent = user.displayName || user.email;
-        loadItems(); // データ読み込み開始
+        loadItems(); // データの読み込み開始
       } else {
         loginView.classList.remove('hidden');
         appView.classList.add('hidden');
       }
     });
 
-    // 3. データ登録処理 (Firestoreへ追加)
+    // 3. データ登録処理 (Firestoreへの保存)
     itemForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       
@@ -171,14 +173,13 @@
       try {
         await addDoc(collection(db, "lendings"), newItem);
         itemForm.reset();
-        // 本日の日付を再セット
         document.getElementById('startDate').valueAsDate = new Date();
       } catch (error) {
         alert("保存に失敗しました: " + error.message);
       }
     });
 
-    // 4. データ一覧のリアルタイム取得・更新（再読み込みしても消えない）
+    // 4. データ一覧のリアルタイム読み込み (ページ再読み込み後も保持)
     function loadItems() {
       const q = query(collection(db, "lendings"), orderBy("createdAt", "desc"));
       
@@ -212,13 +213,13 @@
       });
     }
 
-    // 返却状況の切り替え（テーブル上のバッジクリックで更新可能）
+    // 返却状況の切り替え（クリックでステータス変更可能）
     window.toggleStatus = async (id, currentStatus) => {
       const newStatus = currentStatus === "未返却" ? "返却済み" : "未返却";
       await updateDoc(doc(db, "lendings", id), { status: newStatus });
     };
 
-    // XSS対策のエスケープ処理
+    // 安全対策（HTMLエスケープ）
     function escapeHtml(str) {
       return str.replace(/[&<>"']/g, (m) => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
